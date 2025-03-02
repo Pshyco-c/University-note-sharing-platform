@@ -2,6 +2,11 @@
 
 A modern web application for university students to upload, organize, and share their lecture notes. Built with React, TypeScript, Tailwind CSS, and Supabase.
 
+![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white)
+![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)
+![TailwindCSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
+
 ## Features
 
 - 📚 Upload and organize lecture notes by university, course, and professor
@@ -11,6 +16,10 @@ A modern web application for university students to upload, organize, and share 
 - 📱 Mobile-friendly responsive design
 - 🎓 University and course management
 - 👤 User profiles and authentication
+- 📊 Analytics and trending notes
+- 🏷️ Tag-based organization
+- 💬 Comments and discussions
+- ⭐ Rating system for quality content
 
 ## Tech Stack
 
@@ -26,8 +35,8 @@ A modern web application for university students to upload, organize, and share 
 
 1. Clone the repository:
    ```bash
-   git clone [repository-url]
-   cd university-notes-app
+   git clone https://github.com/Pshyco-c/University-note-sharing-platform.git
+   cd university-note-sharing-platform
    ```
 
 2. Install dependencies:
@@ -47,6 +56,17 @@ A modern web application for university students to upload, organize, and share 
    npm run dev
    ```
 
+## Project Structure
+
+```
+src/
+├── components/     # Reusable UI components
+├── contexts/      # React context providers
+├── lib/           # Utility functions and configurations
+├── pages/         # Main application pages
+└── types/         # TypeScript type definitions
+```
+
 ## Contributing
 
 1. Fork the repository
@@ -55,6 +75,14 @@ A modern web application for university students to upload, organize, and share 
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
+## Support
+
+If you find this project helpful, please consider giving it a ⭐️ on GitHub!
+
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Contact
+
+Project Link: [https://github.com/Pshyco-c/University-note-sharing-platform](https://github.com/Pshyco-c/University-note-sharing-platform)
