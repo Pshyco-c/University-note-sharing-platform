@@ -6,6 +6,7 @@ A modern web application for university students to upload, organize, and share 
 ![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)
 ![TailwindCSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
+![Vercel](https://img.shields.io/badge/vercel-%23000000.svg?style=for-the-badge&logo=vercel&logoColor=white)
 
 ## Features
 
@@ -55,6 +56,64 @@ A modern web application for university students to upload, organize, and share 
    ```bash
    npm run dev
    ```
+
+## Deployment
+
+### Deploying to Vercel
+
+This project is configured for seamless deployment on Vercel. Here's how to deploy:
+
+#### Option 1: Using Vercel Dashboard (Recommended)
+
+1. Push your code to a GitHub repository
+2. Visit [Vercel](https://vercel.com) and sign up/login
+3. Click "New Project"
+4. Import your GitHub repository
+5. Configure the project:
+   - Framework Preset: Vite
+   - Build Command: `npm run build`
+   - Output Directory: `dist`
+   - Install Command: `npm install`
+6. Add environment variables:
+   ```
+   VITE_SUPABASE_URL=your-supabase-url
+   VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+   VITE_APP_NAME=StudyNotes
+   VITE_APP_DESCRIPTION="Share and discover university lecture notes"
+   ```
+7. Click "Deploy"
+
+#### Option 2: Using Vercel CLI
+
+1. Install Vercel CLI:
+   ```bash
+   npm install -g vercel
+   ```
+
+2. Login to Vercel:
+   ```bash
+   vercel login
+   ```
+
+3. Deploy from your project directory:
+   ```bash
+   vercel
+   ```
+
+### Post-Deployment Configuration
+
+1. Configure Supabase:
+   - Go to your Supabase dashboard
+   - Navigate to Authentication → URL Configuration
+   - Add your Vercel domain (e.g., `https://your-app.vercel.app`) to:
+     - Site URL
+     - Additional Redirect URLs
+
+2. Test your deployment:
+   - Verify authentication flows
+   - Test file uploads
+   - Check environment variables
+   - Confirm routing works correctly
 
 ## Project Structure
 
