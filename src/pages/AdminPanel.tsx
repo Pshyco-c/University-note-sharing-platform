@@ -1,22 +1,56 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
 import {
   Users,
   FileText,
   School,
-  Trash2,
-  Edit,
-  Search,
-  Shield,
   BarChart3,
-  BookOpen,
-  GraduationCap,
-  Settings,
+  Shield,
   Key,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useAdminAuth } from '../hooks/useAdminAuth';
+
+// Mock data for demonstration
+const mockUsers = [
+  {
+    id: '1',
+    email: 'user1@example.com',
+    username: 'user1',
+    university: 'University A',
+    created_at: '2024-01-01'
+  },
+  {
+    id: '2',
+    email: 'user2@example.com',
+    username: 'user2',
+    university: 'University B',
+    created_at: '2024-01-02'
+  }
+];
+
+const mockNotes = [
+  {
+    id: '1',
+    title: 'Introduction to Computer Science',
+    university: 'University A',
+    course: 'CS101',
+    professor: 'Dr. Smith',
+    created_at: '2024-01-01',
+    user_id: '1',
+    is_public: true
+  },
+  {
+    id: '2',
+    title: 'Advanced Mathematics',
+    university: 'University B',
+    course: 'MATH201',
+    professor: 'Dr. Johnson',
+    created_at: '2024-01-02',
+    user_id: '2',
+    is_public: false
+  }
+];
 
 interface User {
   id: string;
@@ -47,124 +81,25 @@ interface Stats {
 export default function AdminPanel() {
   const navigate = useNavigate();
   const { isAdmin, isLoading } = useAdminAuth();
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'notes' | 'settings'>('overview');
-  const [users, setUsers] = useState<User[]>([]);
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [stats, setStats] = useState<Stats>({
-    totalUsers: 0,
-    totalNotes: 0,
-    totalUniversities: 0,
-    publicNotes: 0,
-  });
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'notes'>('overview');
+  const [users] = useState<User[]>(mockUsers);
+  const [notes] = useState<Note[]>(mockNotes);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
-  useEffect(() => {
-    if (activeTab === 'overview') {
-      fetchStats();
-    } else if (activeTab === 'users') {
-      fetchUsers();
-    } else if (activeTab === 'notes') {
-      fetchNotes();
-    }
-  }, [activeTab]);
-
-  const fetchStats = async () => {
-    if (isLoading) return;
-    try {
-      const [usersCount, notesCount, universitiesCount, publicNotesCount] = await Promise.all([
-        supabase.from('profiles').select('id', { count: 'exact' }),
-        supabase.from('notes').select('id', { count: 'exact' }),
-        supabase.from('notes').select('university', { count: 'exact', head: true }).neq('university', ''),
-        supabase.from('notes').select('id', { count: 'exact' }).eq('is_public', true),
-      ]);
-
-      setStats({
-        totalUsers: usersCount.count || 0,
-        totalNotes: notesCount.count || 0,
-        totalUniversities: universitiesCount.count || 0,
-        publicNotes: publicNotesCount.count || 0,
-      });
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-      toast.error('Failed to load statistics');
-    }
-  };
-
-  const fetchUsers = async () => {
-    if (isLoading) return;
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setUsers(data || []);
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      toast.error('Failed to load users');
-    }
-  };
-
-  const fetchNotes = async () => {
-    if (isLoading) return;
-    try {
-      const { data, error } = await supabase
-        .from('notes')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setNotes(data || []);
-    } catch (error) {
-      console.error('Error fetching notes:', error);
-      toast.error('Failed to load notes');
-    }
+  // Calculate stats from mock data
+  const stats: Stats = {
+    totalUsers: mockUsers.length,
+    totalNotes: mockNotes.length,
+    totalUniversities: [...new Set(mockNotes.map(note => note.university))].length,
+    publicNotes: mockNotes.filter(note => note.is_public).length
   };
 
   const handleDeleteUser = async (userId: string) => {
-    try {
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', userId);
-
-      if (profileError) throw profileError;
-
-      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
-      
-      if (authError) throw authError;
-
-      toast.success('User deleted successfully');
-      // Refresh user list
-      fetchUsers();
-    } catch (error) {
-      console.error('Delete user error:', error);
-      toast.error('Failed to delete user');
-    }
+    toast.error('Delete functionality is not implemented in demo mode');
   };
 
   const handleDeleteNote = async (noteId: string) => {
-    try {
-      const { error } = await supabase
-        .from('notes')
-        .delete()
-        .eq('id', noteId);
-
-      if (error) throw error;
-
-      toast.success('Note deleted successfully');
-      // Refresh notes list
-      fetchNotes();
-    } catch (error) {
-      console.error('Delete note error:', error);
-      toast.error('Failed to delete note');
-    }
+    toast.error('Delete functionality is not implemented in demo mode');
   };
 
   const filteredUsers = users.filter(user =>
@@ -179,51 +114,6 @@ export default function AdminPanel() {
     note.course.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const StatCard = ({ icon: Icon, title, value, className }: any) => (
-    <div className="bg-modern-light-card dark:bg-modern-dark-card border border-modern-light-border dark:border-modern-dark-border rounded-xl p-6 flex items-center space-x-4">
-      <div className={`p-3 rounded-lg ${className}`}>
-        <Icon className="w-6 h-6 text-white" />
-      </div>
-      <div>
-        <p className="text-modern-light-text/60 dark:text-modern-dark-text/60 text-sm">{title}</p>
-        <p className="text-2xl font-semibold text-modern-light-text dark:text-modern-dark-text">{value}</p>
-      </div>
-    </div>
-  );
-
-  const handlePasswordChange = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newPassword !== confirmPassword) {
-      toast.error('New passwords do not match');
-      return;
-    }
-
-    if (newPassword.length < 8) {
-      toast.error('Password must be at least 8 characters long');
-      return;
-    }
-
-    setIsChangingPassword(true);
-    try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword
-      });
-
-      if (error) throw error;
-
-      toast.success('Password updated successfully');
-      setShowPasswordModal(false);
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-    } catch (error) {
-      console.error('Error changing password:', error);
-      toast.error('Failed to change password');
-    } finally {
-      setIsChangingPassword(false);
-    }
-  };
-
   if (isLoading) {
     return <div className="flex justify-center items-center min-h-screen">
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-violet"></div>
@@ -231,28 +121,21 @@ export default function AdminPanel() {
   }
 
   if (!isAdmin) {
-    return null; // The hook will handle redirection
+    return null;
   }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center mb-8">
         <div className="flex items-center gap-3">
           <Shield className="w-8 h-8 text-accent-violet dark:text-accent-violet-light" />
           <h1 className="text-3xl font-bold bg-gradient-to-r from-accent-violet to-accent-teal bg-clip-text text-transparent">
             Admin Panel
           </h1>
         </div>
-        <button
-          onClick={() => setShowPasswordModal(true)}
-          className="flex items-center px-4 py-2 rounded-lg font-medium text-modern-light-text/70 dark:text-modern-dark-text/70 hover:bg-modern-light-card dark:hover:bg-modern-dark-card"
-        >
-          <Key className="w-4 h-4 mr-2" />
-          Change Password
-        </button>
       </div>
 
-      <div className="flex space-x-4 mb-6">
+      <div className="flex gap-4 mb-8">
         <button
           onClick={() => setActiveTab('overview')}
           className={`px-4 py-2 rounded-lg font-medium ${
@@ -309,7 +192,7 @@ export default function AdminPanel() {
             className="bg-purple-500"
           />
           <StatCard
-            icon={BookOpen}
+            icon={FileText}
             title="Public Notes"
             value={stats.publicNotes}
             className="bg-orange-500"
@@ -320,13 +203,12 @@ export default function AdminPanel() {
       {(activeTab === 'users' || activeTab === 'notes') && (
         <div className="mb-6">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-modern-light-text/50 dark:text-modern-dark-text/50" />
             <input
               type="text"
               placeholder={`Search ${activeTab}...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 rounded-lg border border-modern-light-border dark:border-modern-dark-border bg-modern-light-card dark:bg-modern-dark-card text-modern-light-text dark:text-modern-dark-text placeholder-modern-light-text/50 dark:placeholder-modern-dark-text/50"
+              className="w-full px-4 py-2 rounded-lg border border-modern-light-border dark:border-modern-dark-border bg-modern-light-card dark:bg-modern-dark-card text-modern-light-text dark:text-modern-dark-text"
             />
           </div>
         </div>
@@ -355,9 +237,9 @@ export default function AdminPanel() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-modern-light-border dark:divide-modern-dark-border">
+              <tbody>
                 {filteredUsers.map((user) => (
-                  <tr key={user.id}>
+                  <tr key={user.id} className="border-b border-modern-light-border dark:border-modern-dark-border">
                     <td className="px-6 py-4 whitespace-nowrap text-modern-light-text dark:text-modern-dark-text">
                       {user.username}
                     </td>
@@ -370,12 +252,12 @@ export default function AdminPanel() {
                     <td className="px-6 py-4 whitespace-nowrap text-modern-light-text/70 dark:text-modern-dark-text/70">
                       {new Date(user.created_at).toLocaleDateString()}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
                       <button
                         onClick={() => handleDeleteUser(user.id)}
                         className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                       >
-                        <Trash2 className="w-5 h-5" />
+                        Delete
                       </button>
                     </td>
                   </tr>
@@ -412,9 +294,9 @@ export default function AdminPanel() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-modern-light-border dark:divide-modern-dark-border">
+              <tbody>
                 {filteredNotes.map((note) => (
-                  <tr key={note.id}>
+                  <tr key={note.id} className="border-b border-modern-light-border dark:border-modern-dark-border">
                     <td className="px-6 py-4 whitespace-nowrap text-modern-light-text dark:text-modern-dark-text">
                       {note.title}
                     </td>
@@ -438,12 +320,12 @@ export default function AdminPanel() {
                     <td className="px-6 py-4 whitespace-nowrap text-modern-light-text/70 dark:text-modern-dark-text/70">
                       {new Date(note.created_at).toLocaleDateString()}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
                       <button
                         onClick={() => handleDeleteNote(note.id)}
                         className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                       >
-                        <Trash2 className="w-5 h-5" />
+                        Delete
                       </button>
                     </td>
                   </tr>
@@ -453,72 +335,18 @@ export default function AdminPanel() {
           </div>
         </div>
       )}
-
-      {showPasswordModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-modern-light-card dark:bg-modern-dark-card rounded-xl p-6 max-w-md w-full mx-4">
-            <h2 className="text-xl font-semibold text-modern-light-text dark:text-modern-dark-text mb-4">
-              Change Admin Password
-            </h2>
-            <form onSubmit={handlePasswordChange} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-modern-light-text/70 dark:text-modern-dark-text/70 mb-1">
-                  New Password
-                </label>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full px-4 py-2 rounded-lg border border-modern-light-border dark:border-modern-dark-border bg-modern-light-bg dark:bg-modern-dark-bg text-modern-light-text dark:text-modern-dark-text"
-                  required
-                  minLength={8}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-modern-light-text/70 dark:text-modern-dark-text/70 mb-1">
-                  Confirm New Password
-                </label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full px-4 py-2 rounded-lg border border-modern-light-border dark:border-modern-dark-border bg-modern-light-bg dark:bg-modern-dark-bg text-modern-light-text dark:text-modern-dark-text"
-                  required
-                  minLength={8}
-                />
-              </div>
-              <div className="flex justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowPasswordModal(false);
-                    setCurrentPassword('');
-                    setNewPassword('');
-                    setConfirmPassword('');
-                  }}
-                  className="px-4 py-2 rounded-lg font-medium text-modern-light-text/70 dark:text-modern-dark-text/70 hover:bg-modern-light-bg dark:hover:bg-modern-dark-bg"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isChangingPassword}
-                  className="px-4 py-2 rounded-lg font-medium text-white bg-accent-violet hover:bg-accent-violet-dark dark:bg-accent-violet-light dark:hover:bg-accent-violet disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isChangingPassword ? (
-                    <div className="flex items-center">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Updating...
-                    </div>
-                  ) : (
-                    'Update Password'
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
-} 
+}
+
+const StatCard = ({ icon: Icon, title, value, className }: any) => (
+  <div className="bg-modern-light-card dark:bg-modern-dark-card border border-modern-light-border dark:border-modern-dark-border rounded-xl p-6 flex items-center space-x-4">
+    <div className={`p-3 rounded-lg ${className}`}>
+      <Icon className="w-6 h-6 text-white" />
+    </div>
+    <div>
+      <p className="text-modern-light-text/60 dark:text-modern-dark-text/60 text-sm">{title}</p>
+      <p className="text-2xl font-semibold text-modern-light-text dark:text-modern-dark-text">{value}</p>
+    </div>
+  </div>
+); 

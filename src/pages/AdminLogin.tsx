@@ -2,14 +2,13 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, User, Lock } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { supabase } from '../lib/supabase';
 
-const ADMIN_EMAIL = 'admin';  // Changed to simpler username
-const ADMIN_PASSWORD = 'admin123';  // Changed to simpler password
+const ADMIN_EMAIL = 'admin';
+const ADMIN_PASSWORD = 'admin123';
 
 export default function AdminLogin() {
   const navigate = useNavigate();
-  const [username, setUsername] = useState('');  // Changed from email to username
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -18,12 +17,10 @@ export default function AdminLogin() {
     setIsLoading(true);
 
     try {
-      // Check if credentials match
       if (username !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
         throw new Error('Invalid credentials');
       }
 
-      // Set admin status and redirect
       localStorage.setItem('isAdmin', 'true');
       navigate('/admin/dashboard');
       toast.success('Successfully logged in as admin');
@@ -61,7 +58,7 @@ export default function AdminLogin() {
                   onChange={(e) => setUsername(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 rounded-lg border border-modern-light-border dark:border-modern-dark-border bg-modern-light-bg dark:bg-modern-dark-bg text-modern-light-text dark:text-modern-dark-text"
                   required
-                  placeholder="admin"
+                  placeholder="Enter username"
                 />
               </div>
             </div>
@@ -78,7 +75,7 @@ export default function AdminLogin() {
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 rounded-lg border border-modern-light-border dark:border-modern-dark-border bg-modern-light-bg dark:bg-modern-dark-bg text-modern-light-text dark:text-modern-dark-text"
                   required
-                  placeholder="Enter your password"
+                  placeholder="Enter password"
                 />
               </div>
             </div>
@@ -101,9 +98,6 @@ export default function AdminLogin() {
           <div className="mt-6 text-center">
             <p className="text-sm text-modern-light-text/50 dark:text-modern-dark-text/50">
               This page is restricted to administrators only.
-            </p>
-            <p className="text-xs text-modern-light-text/30 dark:text-modern-dark-text/30 mt-2">
-              Default credentials: {ADMIN_EMAIL} / {ADMIN_PASSWORD}
             </p>
           </div>
         </div>
