@@ -1,126 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, User, Lock } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 
-const ADMIN_EMAIL = 'admin@studynotes.com';
-const ADMIN_PASSWORD = 'Admin@123';
+const ADMIN_EMAIL = 'admin';  // Changed to simpler username
+const ADMIN_PASSWORD = 'admin123';  // Changed to simpler password
 
 export default function AdminLogin() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');  // Changed from email to username
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-
-  const createAdminUser = async () => {
-    try {
-      // Try to sign up the admin user
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: ADMIN_EMAIL,
-        password: ADMIN_PASSWORD,
-        options: {
-          data: {
-            role: 'admin'
-          }
-        }
-      });
-
-      if (signUpError) {
-        console.error('Admin creation error:', signUpError);
-        return false;
-      }
-
-      if (signUpData.user) {
-        // Create admin profile
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .upsert({
-            id: signUpData.user.id,
-            username: 'admin',
-            role: 'admin',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          });
-
-        if (profileError) {
-          console.error('Profile creation error:', profileError);
-          return false;
-        }
-
-        return true;
-      }
-    } catch (error) {
-      console.error('Admin creation failed:', error);
-      return false;
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      // Try to sign in
-      let { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      // If login fails and it's the admin email, try to create the admin user
-      if (error && email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-        console.log('Attempting to create admin user...');
-        const created = await createAdminUser();
-        if (created) {
-          // Try signing in again
-          ({ data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-          }));
-        }
+      // Check if credentials match
+      if (username !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
+        throw new Error('Invalid credentials');
       }
 
-      if (error) {
-        console.error('Sign in error:', error);
-        throw new Error('Invalid email or password');
-      }
-
-      if (!data.user) {
-        throw new Error('No user data returned');
-      }
-
-      console.log('Successfully signed in. User ID:', data.user.id);
-
-      // Check if user has admin role
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', data.user.id)
-        .single();
-
-      console.log('Profile data:', profileData);
-
-      if (profileError) {
-        console.error('Profile fetch error:', profileError);
-        throw new Error('Could not verify admin status');
-      }
-
-      if (profileData?.role !== 'admin') {
-        // Sign out if not admin
-        await supabase.auth.signOut();
-        throw new Error('This account does not have admin privileges');
-      }
-
-      // If we get here, the user is authenticated and is an admin
+      // Set admin status and redirect
       localStorage.setItem('isAdmin', 'true');
-      localStorage.setItem('adminId', data.user.id);
       navigate('/admin/dashboard');
       toast.success('Successfully logged in as admin');
     } catch (error) {
       console.error('Login error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to login');
       localStorage.removeItem('isAdmin');
-      localStorage.removeItem('adminId');
     } finally {
       setIsLoading(false);
     }
@@ -141,17 +51,17 @@ export default function AdminLogin() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-modern-light-text/70 dark:text-modern-dark-text/70 mb-1">
-                Email
+                Username
               </label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-modern-light-text/50 dark:text-modern-dark-text/50" />
                 <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 rounded-lg border border-modern-light-border dark:border-modern-dark-border bg-modern-light-bg dark:bg-modern-dark-bg text-modern-light-text dark:text-modern-dark-text"
                   required
-                  placeholder={ADMIN_EMAIL}
+                  placeholder="admin"
                 />
               </div>
             </div>
