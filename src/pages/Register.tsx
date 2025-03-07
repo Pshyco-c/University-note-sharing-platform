@@ -88,7 +88,7 @@ export default function Register() {
 
       console.log('Creating profile for user:', authData.user.id);
 
-      // Create the user profile with RLS bypass
+      // Create the user profile
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .insert({
@@ -106,15 +106,15 @@ export default function Register() {
       });
 
       if (profileError) {
-        // If profile creation fails, delete the auth user
-        await supabase.auth.admin.deleteUser(authData.user.id);
         console.error('Profile error details:', {
           message: profileError.message,
           code: profileError.code,
           details: profileError.details,
           hint: profileError.hint
         });
-        throw profileError;
+        // Instead of trying to delete the auth user (which requires admin rights),
+        // we'll let the user try again or contact support
+        throw new Error('Failed to create user profile. Please try again or contact support if the issue persists.');
       }
 
       toast.success('Registration successful! Please check your email for verification.');
@@ -133,6 +133,8 @@ export default function Register() {
         errorMessage = 'This username or email is already taken.';
       } else if (error.message?.includes('row-level security')) {
         errorMessage = 'Unable to create profile. Please try again.';
+      } else if (error.message?.includes('Failed to create user profile')) {
+        errorMessage = error.message;
       }
       toast.error(errorMessage);
     } finally {
