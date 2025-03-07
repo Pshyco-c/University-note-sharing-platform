@@ -16,6 +16,7 @@ import {
   Key,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { useAdminAuth } from '../hooks/useAdminAuth';
 
 interface User {
   id: string;
@@ -45,6 +46,7 @@ interface Stats {
 
 export default function AdminPanel() {
   const navigate = useNavigate();
+  const { isAdmin, isLoading } = useAdminAuth();
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'notes' | 'settings'>('overview');
   const [users, setUsers] = useState<User[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
@@ -55,7 +57,6 @@ export default function AdminPanel() {
     publicNotes: 0,
   });
   const [searchQuery, setSearchQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -63,7 +64,6 @@ export default function AdminPanel() {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   useEffect(() => {
-    checkAdminAccess();
     if (activeTab === 'overview') {
       fetchStats();
     } else if (activeTab === 'users') {
@@ -73,17 +73,8 @@ export default function AdminPanel() {
     }
   }, [activeTab]);
 
-  const checkAdminAccess = async () => {
-    const isAdmin = localStorage.getItem('isAdmin') === 'true';
-    if (!isAdmin) {
-      navigate('/admin/login');
-      toast.error('Unauthorized access');
-      return;
-    }
-  };
-
   const fetchStats = async () => {
-    setIsLoading(true);
+    if (isLoading) return;
     try {
       const [usersCount, notesCount, universitiesCount, publicNotesCount] = await Promise.all([
         supabase.from('profiles').select('id', { count: 'exact' }),
@@ -101,13 +92,11 @@ export default function AdminPanel() {
     } catch (error) {
       console.error('Error fetching stats:', error);
       toast.error('Failed to load statistics');
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const fetchUsers = async () => {
-    setIsLoading(true);
+    if (isLoading) return;
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -119,13 +108,11 @@ export default function AdminPanel() {
     } catch (error) {
       console.error('Error fetching users:', error);
       toast.error('Failed to load users');
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const fetchNotes = async () => {
-    setIsLoading(true);
+    if (isLoading) return;
     try {
       const { data, error } = await supabase
         .from('notes')
@@ -137,32 +124,32 @@ export default function AdminPanel() {
     } catch (error) {
       console.error('Error fetching notes:', error);
       toast.error('Failed to load notes');
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  const deleteUser = async (userId: string) => {
-    if (!confirm('Are you sure you want to delete this user?')) return;
-
+  const handleDeleteUser = async (userId: string) => {
     try {
-      const { error } = await supabase
+      const { error: profileError } = await supabase
         .from('profiles')
         .delete()
         .eq('id', userId);
 
-      if (error) throw error;
-      setUsers(users.filter(user => user.id !== userId));
+      if (profileError) throw profileError;
+
+      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+      
+      if (authError) throw authError;
+
       toast.success('User deleted successfully');
+      // Refresh user list
+      fetchUsers();
     } catch (error) {
-      console.error('Error deleting user:', error);
+      console.error('Delete user error:', error);
       toast.error('Failed to delete user');
     }
   };
 
-  const deleteNote = async (noteId: string) => {
-    if (!confirm('Are you sure you want to delete this note?')) return;
-
+  const handleDeleteNote = async (noteId: string) => {
     try {
       const { error } = await supabase
         .from('notes')
@@ -170,10 +157,12 @@ export default function AdminPanel() {
         .eq('id', noteId);
 
       if (error) throw error;
-      setNotes(notes.filter(note => note.id !== noteId));
+
       toast.success('Note deleted successfully');
+      // Refresh notes list
+      fetchNotes();
     } catch (error) {
-      console.error('Error deleting note:', error);
+      console.error('Delete note error:', error);
       toast.error('Failed to delete note');
     }
   };
@@ -234,6 +223,16 @@ export default function AdminPanel() {
       setIsChangingPassword(false);
     }
   };
+
+  if (isLoading) {
+    return <div className="flex justify-center items-center min-h-screen">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-violet"></div>
+    </div>;
+  }
+
+  if (!isAdmin) {
+    return null; // The hook will handle redirection
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -373,7 +372,7 @@ export default function AdminPanel() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button
-                        onClick={() => deleteUser(user.id)}
+                        onClick={() => handleDeleteUser(user.id)}
                         className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                       >
                         <Trash2 className="w-5 h-5" />
@@ -441,7 +440,7 @@ export default function AdminPanel() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button
-                        onClick={() => deleteNote(note.id)}
+                        onClick={() => handleDeleteNote(note.id)}
                         className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                       >
                         <Trash2 className="w-5 h-5" />

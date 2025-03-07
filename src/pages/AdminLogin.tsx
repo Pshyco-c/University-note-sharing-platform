@@ -2,18 +2,11 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, User, Lock } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-
-// Get admin credentials from environment variables
-const ADMIN_USERNAME = import.meta.env.VITE_ADMIN_USERNAME;
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
-
-if (!ADMIN_USERNAME || !ADMIN_PASSWORD) {
-  console.error('Admin credentials not properly configured in environment variables');
-}
+import { supabase } from '../lib/supabase';
 
 export default function AdminLogin() {
   const navigate = useNavigate();
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -22,16 +15,40 @@ export default function AdminLogin() {
     setIsLoading(true);
 
     try {
-      if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-        localStorage.setItem('isAdmin', 'true');
-        navigate('/admin/dashboard');
-        toast.success('Successfully logged in as admin');
-      } else {
-        toast.error('Invalid admin credentials');
+      // First, try to sign in with Supabase
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (authError) throw authError;
+
+      if (!authData.user) {
+        throw new Error('No user data returned');
       }
+
+      // Check if the user has admin role in the profiles table
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', authData.user.id)
+        .single();
+
+      if (profileError) throw profileError;
+
+      if (profileData?.role !== 'admin') {
+        await supabase.auth.signOut(); // Sign out if not admin
+        throw new Error('Unauthorized access: Not an admin user');
+      }
+
+      // If we get here, the user is authenticated and is an admin
+      localStorage.setItem('isAdmin', 'true');
+      navigate('/admin/dashboard');
+      toast.success('Successfully logged in as admin');
     } catch (error) {
       console.error('Login error:', error);
-      toast.error('Failed to login');
+      toast.error(error instanceof Error ? error.message : 'Failed to login');
+      localStorage.removeItem('isAdmin');
     } finally {
       setIsLoading(false);
     }
@@ -52,14 +69,14 @@ export default function AdminLogin() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-modern-light-text/70 dark:text-modern-dark-text/70 mb-1">
-                Username
+                Email
               </label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-modern-light-text/50 dark:text-modern-dark-text/50" />
                 <input
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 rounded-lg border border-modern-light-border dark:border-modern-dark-border bg-modern-light-bg dark:bg-modern-dark-bg text-modern-light-text dark:text-modern-dark-text"
                   required
                 />
