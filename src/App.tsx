@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -10,6 +10,8 @@ import Register from './pages/Register';
 import NotesView from './pages/NotesView';
 import VerifyEmail from './pages/VerifyEmail';
 import VerificationSent from './pages/VerificationSent';
+import AdminPanel from './pages/AdminPanel';
+import AdminLogin from './pages/AdminLogin';
 
 function App() {
   return (
@@ -25,6 +27,9 @@ function App() {
             <Route path="/notes/:id" element={<NotesView />} />
             <Route path="/verify" element={<VerifyEmail />} />
             <Route path="/verification-sent" element={<VerificationSent />} />
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/admin" element={<Navigate to="/admin/login" replace />} />
+            <Route path="/admin/dashboard" element={<AdminPanel />} />
           </Routes>
         </main>
         <Footer />

@@ -3,6 +3,14 @@ import { Upload, X, Tag as TagIcon } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const ALLOWED_FILE_TYPES = ['application/pdf'];
+
+interface UploadProgressEvent {
+  loaded: number;
+  total: number;
+}
+
 export default function NoteUpload() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -13,6 +21,36 @@ export default function NoteUpload() {
   const [tags, setTags] = useState<string[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
+  const validateFile = (file: File) => {
+    if (!file) return 'Please select a file';
+    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+      return 'Only PDF files are allowed';
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      return 'File size must be less than 10MB';
+    }
+    return null;
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (!selectedFile) {
+      setFile(null);
+      return;
+    }
+
+    const error = validateFile(selectedFile);
+    if (error) {
+      toast.error(error);
+      e.target.value = ''; // Reset file input
+      setFile(null);
+      return;
+    }
+
+    setFile(selectedFile);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,19 +59,31 @@ export default function NoteUpload() {
       return;
     }
 
+    if (!file) {
+      toast.error('Please select a PDF file to upload');
+      return;
+    }
+
     setIsUploading(true);
+    setUploadProgress(0);
+
     try {
-      let fileUrl = null;
-      if (file) {
-        const { data: fileData, error: fileError } = await supabase.storage
-          .from('notes')
-          .upload(`${Date.now()}-${file.name}`, file);
+      // Create a unique file name to prevent collisions
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      
+      // Upload the file
+      const { data: fileData, error: fileError } = await supabase.storage
+        .from('notes')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
-        if (fileError) throw fileError;
-        fileUrl = fileData.path;
-      }
+      if (fileError) throw fileError;
 
-      const { error } = await supabase.from('notes').insert({
+      // Create the note record
+      const { error: noteError } = await supabase.from('notes').insert({
         title,
         content,
         university,
@@ -41,11 +91,12 @@ export default function NoteUpload() {
         professor,
         is_public: isPublic,
         tags,
-        file_url: fileUrl,
+        file_url: fileData?.path,
         user_id: (await supabase.auth.getUser()).data.user?.id,
       });
 
-      if (error) throw error;
+      if (noteError) throw noteError;
+
       toast.success('Note uploaded successfully!');
       
       // Reset form
@@ -57,9 +108,10 @@ export default function NoteUpload() {
       setIsPublic(false);
       setTags([]);
       setFile(null);
+      setUploadProgress(0);
     } catch (error) {
       console.error('Error uploading note:', error);
-      toast.error('Failed to upload note');
+      toast.error('Failed to upload note. Please try again.');
     } finally {
       setIsUploading(false);
     }
@@ -186,11 +238,12 @@ export default function NoteUpload() {
 
       <div>
         <label className="block text-sm font-medium text-modern-light-text dark:text-modern-dark-text">
-          File
+          PDF File *
         </label>
         <input
           type="file"
-          onChange={(e) => setFile(e.target.files?.[0] || null)}
+          accept=".pdf,application/pdf"
+          onChange={handleFileChange}
           className="mt-1 block w-full text-sm text-modern-light-text/70 dark:text-modern-dark-text/70
             file:mr-4 file:py-2 file:px-4
             file:rounded-full file:border-0
@@ -200,7 +253,26 @@ export default function NoteUpload() {
             hover:file:bg-accent-violet/20 dark:hover:file:bg-accent-violet-light/20
             transition-all duration-200"
         />
+        <p className="mt-1 text-sm text-modern-light-text/50 dark:text-modern-dark-text/50">
+          Only PDF files up to 10MB are allowed
+        </p>
       </div>
+
+      {isUploading && uploadProgress > 0 && (
+        <div className="relative pt-1">
+          <div className="flex mb-2 items-center justify-between">
+            <div className="text-sm text-modern-light-text/70 dark:text-modern-dark-text/70">
+              Uploading... {uploadProgress}%
+            </div>
+          </div>
+          <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-accent-violet/10 dark:bg-accent-violet-light/10">
+            <div 
+              style={{ width: `${uploadProgress}%` }}
+              className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-accent-violet dark:bg-accent-violet-light transition-all duration-200"
+            />
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center">
         <input

@@ -21,6 +21,11 @@ A modern web application for university students to upload, organize, and share 
 - 🏷️ Tag-based organization
 - 💬 Comments and discussions
 - ⭐ Rating system for quality content
+- 🛡️ Admin panel for platform management
+
+## Admin Access
+
+The platform includes a secure admin panel for managing users, content, and platform settings. Admin access is restricted to authorized personnel only. For security reasons, admin credentials are provided separately to system administrators.
 
 ## Tech Stack
 
@@ -46,11 +51,17 @@ A modern web application for university students to upload, organize, and share 
    ```
 
 3. Set up environment variables:
-   Create a `.env` file in the root directory with your Supabase credentials:
+   Create a `.env` file in the root directory with your Supabase credentials and admin configuration:
    ```
    VITE_SUPABASE_URL=your-supabase-url
    VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+   
+   # Admin Configuration (required for admin access)
+   VITE_ADMIN_USERNAME=your-admin-username
+   VITE_ADMIN_PASSWORD=your-secure-admin-password
    ```
+
+   Note: Never commit the `.env` file to version control. Make sure it's listed in your `.gitignore`.
 
 4. Start the development server:
    ```bash

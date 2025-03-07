@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { LogOut, Menu, X, BookOpen } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -8,8 +8,12 @@ import ThemeToggle from './ThemeToggle';
 
 export default function Navbar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = React.useState<User | null>(null);
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+
+  // Check if current page is admin related
+  const isAdminPage = location.pathname.startsWith('/admin');
 
   React.useEffect(() => {
     const checkUser = async () => {
@@ -38,21 +42,37 @@ export default function Navbar() {
     }
   };
 
+  const handleAdminSignOut = () => {
+    localStorage.removeItem('isAdmin');
+    navigate('/admin/login');
+    toast.success('Signed out from admin panel');
+  };
+
   return (
     <nav className="bg-modern-light-card/80 dark:bg-modern-dark-card/80 border-b border-modern-light-border dark:border-modern-dark-border backdrop-blur-sm transition-all duration-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link to="/" className="flex-shrink-0 flex items-center space-x-2 group">
+            <Link to={isAdminPage ? "/admin/dashboard" : "/"} className="flex-shrink-0 flex items-center space-x-2 group">
               <BookOpen className="h-8 w-8 text-accent-violet dark:text-accent-violet-light transform group-hover:scale-105 transition-transform duration-200" />
-              <span className="text-xl font-bold bg-gradient-to-r from-accent-violet to-accent-teal bg-clip-text text-transparent">StudyNotes</span>
+              <span className="text-xl font-bold bg-gradient-to-r from-accent-violet to-accent-teal bg-clip-text text-transparent">
+                {isAdminPage ? "Admin Panel" : "StudyNotes"}
+              </span>
             </Link>
           </div>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex md:items-center md:space-x-4">
             <ThemeToggle />
-            {user ? (
+            {isAdminPage ? (
+              <button
+                onClick={handleAdminSignOut}
+                className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-xl text-white bg-gradient-to-r from-accent-violet to-accent-teal hover:from-accent-violet hover:to-accent-rose transition-all duration-200 shadow-soft hover:shadow-glow transform hover:-translate-y-0.5"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Sign Out
+              </button>
+            ) : user ? (
               <>
                 <Link
                   to="/dashboard"
@@ -105,7 +125,16 @@ export default function Navbar() {
         {/* Mobile menu */}
         {isMenuOpen && (
           <div className="md:hidden pb-3 animate-slide-up">
-            {user ? (
+            {isAdminPage ? (
+              <div className="space-y-1">
+                <button
+                  onClick={handleAdminSignOut}
+                  className="w-full text-left px-3 py-2 rounded-xl text-base font-medium text-modern-light-text-secondary dark:text-modern-dark-text-secondary hover:text-accent-violet dark:hover:text-accent-violet-light hover:bg-modern-light-accent dark:hover:bg-modern-dark-accent transition-all duration-200"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : user ? (
               <div className="space-y-1">
                 <Link
                   to="/dashboard"
