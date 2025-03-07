@@ -2,26 +2,32 @@ import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import NotesView from './pages/NotesView';
+import VerifyEmail from './pages/VerifyEmail';
+import VerificationSent from './pages/VerificationSent';
 
 function App() {
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-modern-light-bg dark:bg-modern-dark-bg transition-colors duration-200">
+      <div className="min-h-screen bg-modern-light-bg dark:bg-modern-dark-bg transition-colors duration-200 flex flex-col">
         <Navbar />
-        <main className="container mx-auto px-4 py-8">
+        <main className="container mx-auto px-4 py-8 flex-grow">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/notes/:id" element={<NotesView />} />
+            <Route path="/verify" element={<VerifyEmail />} />
+            <Route path="/verification-sent" element={<VerificationSent />} />
           </Routes>
         </main>
+        <Footer />
         <Toaster 
           position="top-right"
           toastOptions={{
