@@ -4,6 +4,10 @@ import { Shield, User, Lock } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 
+// Temporary admin credentials (CHANGE THESE IN PRODUCTION)
+const ADMIN_EMAIL = 'admin@studynotes.com';
+const ADMIN_PASSWORD = 'Admin@123';
+
 export default function AdminLogin() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
@@ -15,33 +19,45 @@ export default function AdminLogin() {
     setIsLoading(true);
 
     try {
-      // First, try to sign in with Supabase
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      // First check if credentials match
+      if (email !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
+        throw new Error('Invalid credentials');
+      }
+
+      // Sign in with Supabase
+      const { data: { user }, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (authError) throw authError;
+      if (error) {
+        // If sign in fails, try to sign up first
+        const { data: { user: newUser }, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              role: 'admin'
+            }
+          }
+        });
 
-      if (!authData.user) {
-        throw new Error('No user data returned');
+        if (signUpError) throw signUpError;
+
+        // Create admin profile
+        if (newUser) {
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .insert({
+              id: newUser.id,
+              username: 'admin',
+              role: 'admin'
+            });
+
+          if (profileError) throw profileError;
+        }
       }
 
-      // Check if the user has admin role in the profiles table
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', authData.user.id)
-        .single();
-
-      if (profileError) throw profileError;
-
-      if (profileData?.role !== 'admin') {
-        await supabase.auth.signOut(); // Sign out if not admin
-        throw new Error('Unauthorized access: Not an admin user');
-      }
-
-      // If we get here, the user is authenticated and is an admin
       localStorage.setItem('isAdmin', 'true');
       navigate('/admin/dashboard');
       toast.success('Successfully logged in as admin');

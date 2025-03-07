@@ -1,18 +1,28 @@
--- Add role column to profiles table if it doesn't exist
-DO $$ 
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 
-    FROM information_schema.columns 
-    WHERE table_name = 'profiles' 
-    AND column_name = 'role'
-  ) THEN
-    ALTER TABLE public.profiles
-    ADD COLUMN role text DEFAULT 'user'::text;
-  END IF;
-END $$;
+-- Create the profiles table if it doesn't exist
+CREATE TABLE IF NOT EXISTS public.profiles (
+    id UUID PRIMARY KEY REFERENCES auth.users(id),
+    username TEXT UNIQUE NOT NULL,
+    university TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+    role TEXT DEFAULT 'user'::text
+);
 
--- Ensure role column has correct check constraint
+-- Create the notes table if it doesn't exist
+CREATE TABLE IF NOT EXISTS public.notes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    content TEXT,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    university TEXT,
+    course TEXT,
+    professor TEXT,
+    is_public BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+-- Add role column constraint
 ALTER TABLE public.profiles
 DROP CONSTRAINT IF EXISTS profiles_role_check;
 
@@ -88,6 +98,10 @@ SELECT create_default_admin();
 -- Drop the function after use
 DROP FUNCTION IF EXISTS create_default_admin();
 
+-- Enable RLS on the tables
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.notes ENABLE ROW LEVEL SECURITY;
+
 -- Create policies for admin access
 DROP POLICY IF EXISTS "Admins can view all profiles" ON public.profiles;
 CREATE POLICY "Admins can view all profiles"
@@ -118,10 +132,6 @@ CREATE POLICY "Admins can view all notes"
   ON public.notes FOR SELECT
   TO authenticated
   USING (auth.uid() IN (SELECT id FROM public.profiles WHERE role = 'admin'));
-
--- Enable RLS on the tables
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.notes ENABLE ROW LEVEL SECURITY;
 
 -- Create admin role if it doesn't exist
 DO $$ 
