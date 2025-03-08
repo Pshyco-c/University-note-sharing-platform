@@ -38,9 +38,12 @@ export default function Register() {
     e.preventDefault();
     setLoading(true);
 
-    console.log('Form Data:', { email, username, university }); // Log form data
-    console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL); // Log Supabase URL
-    console.log('Redirect URL:', `${origin}/verify`); // Log redirect URL
+    console.log('Form Data:', { email, username, university });
+    console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
+    
+    // Update the redirect URL to include the full path
+    const redirectTo = `${origin}/verify`;
+    console.log('Redirect URL:', redirectTo);
 
     try {
       console.log('Starting registration process...');
@@ -52,7 +55,7 @@ export default function Register() {
         throw new Error('Unable to connect to the database. Please try again.');
       }
 
-      // First, register the user with redirect to verification page
+      // Sign up the user with email confirmation
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -61,8 +64,7 @@ export default function Register() {
             username,
             university
           },
-          // Redirect to a verification page on the current domain
-          emailRedirectTo: `${origin}/verify`
+          emailRedirectTo: redirectTo
         }
       });
 
@@ -86,35 +88,20 @@ export default function Register() {
         throw new Error('No user data returned');
       }
 
-      console.log('Creating profile for user:', authData.user.id);
+      // Store registration data in localStorage for profile creation after verification
+      localStorage.setItem('pendingRegistration', JSON.stringify({
+        userId: authData.user.id,
+        username,
+        university,
+        email
+      }));
 
-      // Create the user profile
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: authData.user.id,
-          username,
-          university,
-          created_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
+      // Store password temporarily for verification process
+      localStorage.setItem('tempPassword', password);
 
-      console.log('Profile creation response:', {
-        data: profileData,
-        error: profileError
-      });
-
-      if (profileError) {
-        console.error('Profile error details:', {
-          message: profileError.message,
-          code: profileError.code,
-          details: profileError.details,
-          hint: profileError.hint
-        });
-        // Instead of trying to delete the auth user (which requires admin rights),
-        // we'll let the user try again or contact support
-        throw new Error('Failed to create user profile. Please try again or contact support if the issue persists.');
+      // Check if the confirmation email was sent
+      if (authData.user.identities?.length === 0) {
+        throw new Error('Failed to send verification email. Please try again.');
       }
 
       toast.success('Registration successful! Please check your email for verification.');
@@ -125,8 +112,11 @@ export default function Register() {
         message: error.message,
         name: error.name,
         stack: error.stack,
-        details: error
+        details: error.details,
+        code: error?.code,
+        hint: error?.hint
       });
+      
       // Show a more user-friendly error message
       let errorMessage = 'Failed to register. Please try again.';
       if (error.message?.includes('duplicate key')) {
@@ -135,7 +125,17 @@ export default function Register() {
         errorMessage = 'Unable to create profile. Please try again.';
       } else if (error.message?.includes('Failed to create user profile')) {
         errorMessage = error.message;
+      } else if (error.message?.includes('Failed to send verification email')) {
+        errorMessage = 'Failed to send verification email. Please try again.';
       }
+      
+      // Log the complete error state
+      console.log('Registration error state:', {
+        formData: { email, username, university },
+        errorMessage,
+        originalError: error
+      });
+
       toast.error(errorMessage);
     } finally {
       setLoading(false);

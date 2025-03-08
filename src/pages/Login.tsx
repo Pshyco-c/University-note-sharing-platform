@@ -61,12 +61,12 @@ export default function Login() {
         .from('profiles')
         .select('*')
         .eq('id', data.user.id)
-        .single();
+        .maybeSingle();
 
       console.log('Profile check:', { profile, profileError });
 
-      if (profileError) {
-        console.error('Profile error:', profileError);
+      if (!profile) {
+        console.error('No profile found');
         throw new Error('Unable to find user profile. Please try registering first.');
       }
 

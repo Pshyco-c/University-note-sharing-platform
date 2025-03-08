@@ -13,15 +13,8 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables. Check your .env file.');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-    flowType: 'pkce',
-    storage: window.localStorage
-  }
-});
+// Create the default client with anonymous key
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Check and log initial auth state
 supabase.auth.getSession().then(({ data: { session } }) => {
